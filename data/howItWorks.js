@@ -1,0 +1,26 @@
+import { Building2, FileEdit, Users, LineChart } from "lucide-react";
+
+export const howItWorks = [
+  {
+    title: "Industry Insights",
+    description:
+      "Stay ahead with real-time industry trends, salary data, and market analysis.",
+    icon: <Building2 className="w-8 h-8 text-primary" />,
+  },
+  {
+    title: "Craft Your Documents",
+    description: "Create ATS-optimized resumes and compelling cover letters",
+    icon: <FileEdit className="w-8 h-8 text-primary" />,
+  },
+  {
+    title: "Prepare for Interviews",
+    description:
+      "Practice with AI-powered mock interviews tailored to your role",
+    icon: <Users className="w-8 h-8 text-primary" />,
+  },
+  {
+    title: "Track Your Progress",
+    description: "Monitor improvements with detailed performance analytics",
+    icon: <LineChart className="w-8 h-8 text-primary" />,
+  },
+];
