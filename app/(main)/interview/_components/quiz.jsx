@@ -20,7 +20,7 @@ import { BarLoader } from "react-spinners";
 export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
-  const [showExplanation, setShowExplanation] = useState(false);
+  // const [showExplanation, setShowExplanation] = useState(false);
 
   const {
     loading: generatingQuiz,
@@ -50,7 +50,7 @@ export default function Quiz() {
   const handleNext = () => {
     if (currentQuestion < quizData.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
-      setShowExplanation(false);
+      // setShowExplanation(false);
     } else {
       finishQuiz();
     }
@@ -79,7 +79,7 @@ export default function Quiz() {
   const startNewQuiz = () => {
     setCurrentQuestion(0);
     setAnswers([]);
-    setShowExplanation(false);
+    // setShowExplanation(false);
     generateQuizFn();
     setResultData(null);
   };
@@ -142,15 +142,15 @@ export default function Quiz() {
           ))}
         </RadioGroup>
 
-        {showExplanation && (
+        {/* {showExplanation && (
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <p className="font-medium">Explanation:</p>
             <p className="text-muted-foreground">{question.explanation}</p>
           </div>
-        )}
+        )} */}
       </CardContent>
       <CardFooter className="flex justify-between">
-        {!showExplanation && (
+        {/* {!showExplanation && (
           <Button
             onClick={() => setShowExplanation(true)}
             variant="outline"
@@ -158,7 +158,7 @@ export default function Quiz() {
           >
             Show Explanation
           </Button>
-        )}
+        )} */}
         <Button
           onClick={handleNext}
           disabled={!answers[currentQuestion] || savingResult}

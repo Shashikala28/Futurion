@@ -5,7 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 export async function generateQuiz() {
   const { userId } = await auth();
@@ -22,13 +22,20 @@ export async function generateQuiz() {
   if (!user) throw new Error("User not found");
 
   const prompt = `
-    Generate 10 technical interview questions for a ${
+    You are an expert technical interviewer.
+    Generate 10 unique and varied technical interview questions for a ${
       user.industry
     } professional${
     user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
   }.
     
-    Each question should be multiple choice with 4 options.
+    Requirements:
+        - Each question should be multiple choice with 4 options.
+        - No question should repeat or be reworded versions of others.
+        - Vary the difficulty: include beginner, intermediate, and advanced levels.
+        - Cover different subtopics from the ${user.industry} domain.
+        - Each question must test a different concept.
+        - Randomize the structure and wording of questions.
     
     Return the response in this JSON format only, no additional text:
     {
@@ -101,7 +108,6 @@ export async function saveQuizResult(questions, answers, score) {
 
     try {
       const tipResult = await model.generateContent(improvementPrompt);
-
       improvementTip = tipResult.response.text().trim();
       console.log(improvementTip);
     } catch (error) {

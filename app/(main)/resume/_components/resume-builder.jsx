@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +22,8 @@ import useFetch from "@/hooks/use-fetch";
 import { useUser } from "@clerk/nextjs";
 import { entriesToMarkdown } from "@/app/lib/helper";
 import { resumeSchema } from "@/app/lib/schema";
-import html2pdf from "html2pdf.js/dist/html2pdf.min.js";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas-pro";
 
 export default function ResumeBuilder({ initialContent }) {
   const [activeTab, setActiveTab] = useState("edit");
@@ -56,14 +56,12 @@ export default function ResumeBuilder({ initialContent }) {
     error: saveError,
   } = useFetch(saveResume);
 
-  // Watch form fields for preview updates
   const formValues = watch();
 
   useEffect(() => {
     if (initialContent) setActiveTab("preview");
   }, [initialContent]);
 
-  // Update preview content when form values change
   useEffect(() => {
     if (activeTab === "edit") {
       const newContent = getCombinedContent();
@@ -71,7 +69,6 @@ export default function ResumeBuilder({ initialContent }) {
     }
   }, [formValues, activeTab]);
 
-  // Handle save result
   useEffect(() => {
     if (saveResult && !isSaving) {
       toast.success("Resume saved successfully!");
@@ -88,11 +85,13 @@ export default function ResumeBuilder({ initialContent }) {
     if (contactInfo.mobile) parts.push(`📱 ${contactInfo.mobile}`);
     if (contactInfo.linkedin)
       parts.push(`💼 [LinkedIn](${contactInfo.linkedin})`);
-    if (contactInfo.twitter) parts.push(`🐦 [Twitter](${contactInfo.twitter})`);
+    // if (contactInfo.twitter) parts.push(`🐦 [Twitter](${contactInfo.twitter})`);
+    if (contactInfo.github) parts.push(`🐙 [GitHub](${contactInfo.github})`);
 
     return parts.length > 0
-      ? `## <div align="center">${user.fullName}</div>
-        \n\n<div align="center">\n\n${parts.join(" | ")}\n\n</div>`
+      ? `## <div align="center">${
+          user.fullName
+        }</div>\n\n<div align="center">\n\n${parts.join(" | ")}\n\n</div>`
       : "";
   };
 
@@ -113,22 +112,52 @@ export default function ResumeBuilder({ initialContent }) {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generatePDF = async () => {
+    if (typeof window === "undefined") return;
+
     setIsGenerating(true);
     try {
-      const html2pdf = (await import("html2pdf.js")).default;
       const element = document.getElementById("resume-pdf");
+      if (!element) {
+        console.error("resume-pdf element not found");
+        return;
+      }
 
-      const opt = {
-        margin: [15, 15],
-        filename: "resume.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      };
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
 
-      await html2pdf().set(opt).from(element).save();
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+      let position = 0;
+
+      if (imgHeight < pageHeight) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      } else {
+        let heightLeft = imgHeight;
+        while (heightLeft > 0) {
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          if (heightLeft > 0) pdf.addPage();
+          position -= pageHeight;
+        }
+      }
+
+      pdf.save("resume.pdf");
     } catch (error) {
-      console.error("PDF generation error:", error);
+      console.error("PDF generation failed:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -137,8 +166,8 @@ export default function ResumeBuilder({ initialContent }) {
   const onSubmit = async (data) => {
     try {
       const formattedContent = previewContent
-        .replace(/\n/g, "\n") // Normalize newlines
-        .replace(/\n\s*\n/g, "\n\n") // Normalize multiple newlines to double newlines
+        .replace(/\n/g, "\n")
+        .replace(/\n\s*\n/g, "\n\n")
         .trim();
 
       console.log(previewContent, formattedContent);
@@ -241,13 +270,11 @@ export default function ResumeBuilder({ initialContent }) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Twitter/X Profile
-                  </label>
+                  <label className="text-sm font-medium">GitHub URL</label>
                   <Input
-                    {...register("contactInfo.twitter")}
+                    {...register("contactInfo.github")}
                     type="url"
-                    placeholder="https://twitter.com/your-handle"
+                    placeholder="https://github.com/your-handle"
                   />
                   {errors.contactInfo?.twitter && (
                     <p className="text-sm text-red-500">
@@ -391,7 +418,7 @@ export default function ResumeBuilder({ initialContent }) {
             <div className="flex p-3 gap-2 items-center border-2 border-yellow-600 text-yellow-600 rounded mb-2">
               <AlertTriangle className="h-5 w-5" />
               <span className="text-sm">
-                You will lose editied markdown if you update the form data.
+                You will lose edited markdown if you update the form data.
               </span>
             </div>
           )}
@@ -411,20 +438,21 @@ export default function ResumeBuilder({ initialContent }) {
               top: 0,
               background: "white",
               color: "black",
-              width: "210mm", // A4 width
+              width: "210mm",
               padding: "20px",
             }}
           >
-            <style>
-              {`
-      #resume-pdf * {
-        background-color: white !important;
-        color: black !important;
-      }
-    `}
-            </style>
+            <style>{`
+              #resume-pdf * {
+                background-color: white !important;
+                color: black !important;
+              }
+            `}</style>
 
-            <MDEditor.Markdown source={previewContent} />
+            <MDEditor.Markdown
+              className="resume-markdown"
+              source={previewContent}
+            />
           </div>
         </TabsContent>
       </Tabs>

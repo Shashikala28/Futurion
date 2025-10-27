@@ -191,6 +191,35 @@
   pointer-events: none;
 }
 
+/* Compact and smaller resume style */
+.resume-markdown {
+  font-size: 0.9rem !important; /* reduce overall text size */
+  line-height: 1.4 !important;
+  color: black !important;
+}
+
+.resume-markdown h1,
+.resume-markdown h2,
+.resume-markdown h3 {
+  font-size: 1rem !important;
+  margin-top: 0.6rem !important;
+  margin-bottom: 0.3rem !important;
+}
+
+.resume-markdown p {
+  margin: 0.25rem 0 !important;
+}
+
+.resume-markdown ul,
+.resume-markdown ol {
+  margin: 0.3rem 0 !important;
+  padding-left: 1rem !important;
+}
+
+.resume-markdown li {
+  margin-bottom: 0.15rem !important;
+}
+
 @layer utilities {
   .gradient {
     @apply bg-gradient-to-b from-blue-400 via-blue-200 to-blue-600;

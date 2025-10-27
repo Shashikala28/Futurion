@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   BarChart,
   Bar,
@@ -77,6 +78,12 @@ const DashboardView = ({ insights }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <Badge variant="outline">Last updated: {lastUpdatedDate}</Badge>
+        <Link
+          href="/dashboard/edit-profile"
+          className="text-sm font-medium text-blue-600 hover:underline"
+        >
+          Edit Profile
+        </Link>
       </div>
 
       {/* Market Overview Cards */}

@@ -1,3 +1,8 @@
+"use client";
+
+import { SignInButton, useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,8 +26,29 @@ import { features } from "@/data/features";
 import { testimonial } from "@/data/testimonial";
 import { faqs } from "@/data/faqs";
 import { howItWorks } from "@/data/howItWorks";
+import { auth } from "@clerk/nextjs/server";
+import { getUserOnboardingStatus } from "@/actions/user";
+import { redirect } from "next/navigation";
 
 export default function LandingPage() {
+  const { isSignedIn, user } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isSignedIn && user) {
+      // Check if the user exists in your DB
+      fetch("/api/check-onboarding")
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.isOnboarded) {
+            router.push("/onboarding");
+          } else {
+            router.push("/");
+          }
+        });
+    }
+  }, [isSignedIn, user, router]);
+
   return (
     <>
       <div className="grid-background"></div>

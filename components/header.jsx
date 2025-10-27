@@ -30,8 +30,7 @@ export default async function Header() {
             src={"/logo.png"}
             alt="Futurion Logo"
             width={200}
-            height={60}
-            className="h-12 py-1 w-auto object-contain"
+            height={80}
           />
         </Link>
 
