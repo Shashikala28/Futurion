@@ -1,11 +1,14 @@
+//
+
 "use server";
 
 import { db } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function generateQuiz() {
   const { userId } = await auth();
@@ -51,15 +54,96 @@ export async function generateQuiz() {
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
+    const result = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 2048,
+    });
+
+    const message = result.choices[0]?.message?.content || "";
+    const cleanedText = message.replace(/```(?:json)?\n?/g, "").trim();
     const quiz = JSON.parse(cleanedText);
 
     return quiz.questions;
   } catch (error) {
     console.error("Error generating quiz:", error);
+
+    // Fallback: Provide mock quiz when API quota is exceeded
+    if (error.status === 429) {
+      console.warn("⚠️ Gemini API quota exceeded. Using fallback quiz.");
+      return [
+        {
+          question:
+            "What is a key skill in the " +
+            (user.industry || "technology") +
+            " industry?",
+          options: [
+            "Communication",
+            "Problem Solving",
+            "Leadership",
+            "Adaptability",
+          ],
+          correctAnswer: "Problem Solving",
+          explanation:
+            "Problem-solving is fundamental to succeeding in most modern industries.",
+        },
+        {
+          question: "How would you approach learning a new technology?",
+          options: [
+            "Jump in immediately",
+            "Read documentation first",
+            "Ask colleagues",
+            "All of the above",
+          ],
+          correctAnswer: "All of the above",
+          explanation:
+            "A combination of hands-on learning, documentation, and seeking help is the most effective approach.",
+        },
+        {
+          question: "What makes a successful professional?",
+          options: [
+            "Technical skills only",
+            "Soft skills only",
+            "Balance of both",
+            "Experience alone",
+          ],
+          correctAnswer: "Balance of both",
+          explanation:
+            "Success requires both technical expertise and interpersonal skills.",
+        },
+        {
+          question: "How do you handle failure?",
+          options: [
+            "Avoid it at all costs",
+            "Learn from it",
+            "Blame others",
+            "Give up",
+          ],
+          correctAnswer: "Learn from it",
+          explanation:
+            "Treating failures as learning opportunities leads to growth and improvement.",
+        },
+        {
+          question: "What is continuous improvement?",
+          options: [
+            "Working harder",
+            "Regular learning and adaptation",
+            "Never being satisfied",
+            "Changing jobs frequently",
+          ],
+          correctAnswer: "Regular learning and adaptation",
+          explanation:
+            "Continuous improvement means consistently upgrading skills and staying current with industry trends.",
+        },
+      ];
+    }
+
     throw new Error("Failed to generate quiz questions");
   }
 }
@@ -107,8 +191,18 @@ export async function saveQuizResult(questions, answers, score) {
     `;
 
     try {
-      const tipResult = await model.generateContent(improvementPrompt);
-      improvementTip = tipResult.response.text().trim();
+      const tipResult = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [
+          {
+            role: "user",
+            content: improvementPrompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 512,
+      });
+      improvementTip = tipResult.choices[0]?.message?.content || "";
       console.log(improvementTip);
     } catch (error) {
       console.error("Error generating improvement tip:", error);
